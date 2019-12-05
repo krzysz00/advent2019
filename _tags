@@ -1,1 +1,1 @@
-true : package(extlib)
+true : package(core_kernel)
