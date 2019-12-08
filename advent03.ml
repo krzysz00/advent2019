@@ -69,6 +69,32 @@ let intersect a b =
 
 let manhattan_norm (x, y) = abs x + abs y
 
+let line_step_dist goal start stop =
+  if between goal start stop
+  then true, abs (goal - start)
+  else false, abs (stop - start)
+
+let distance_fold (goalx, goaly) (prev_dist, x, y) segment =
+  let open Container.Continue_or_stop in
+  match segment with
+  | { dir = Horiz; const = cy; start = startx; stop = stopx} ->
+    if goaly <> y then Continue (prev_dist + abs (stopx - startx), stopx, y)
+    else (match line_step_dist goalx startx stopx with
+        | (true, delta) -> Stop (prev_dist + delta)
+        | (false, delta) -> Continue (prev_dist + delta, stopx, y))
+  | { dir = Vert; const = cx; start = starty; stop = stopy } ->
+    if goalx <> x then Continue (prev_dist + abs (stopy - starty), x, stopy)
+    else (match line_step_dist goaly starty stopy with
+        | (true, delta) -> Stop (prev_dist + delta)
+        | (false, delta) -> Continue (prev_dist + delta, x, stopy))
+
+let step_distance_to segments point =
+  List.fold_until segments ~init:(0, 0, 0) ~f:(distance_fold point)
+    ~finish:(fun _ -> -1)
+
+let steps_metric l1 l2 point =
+  step_distance_to  l1 point + step_distance_to l2 point
+
 let solve: segment list -> segment list -> ((int * int) -> int) -> (int * int) option =
   let open List in
   fun l1 l2 metric ->
@@ -89,3 +115,4 @@ let program metric =
   in show_solution soln metric
 
 let () = program manhattan_norm;;
+let () = program (steps_metric l1 l2);;
